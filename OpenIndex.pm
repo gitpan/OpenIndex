@@ -1,8 +1,8 @@
-#$Id: OpenIndex.pm,v 1.02c 2001/10/17 13:33:42 perler@xorgate.com Exp $
+#$Id: OpenIndex.pm,v 1.04 2001/10/17 13:33:42 perler@xorgate.com Exp $
 package Apache::OpenIndex;
 use strict;
 
-$Apache::OpenIndex::VERSION = '1.02c';
+$Apache::OpenIndex::VERSION = '1.04';
 
 use Apache::Constants qw(:common OPT_INDEXES DECLINE_CMD REDIRECT DIR_MAGIC_TYPE);
 use DynaLoader ();
@@ -70,7 +70,7 @@ use constant DEFAULT_FILE_MOD 	=> 0460;
 use constant REVOKE_DIR		=> '/revoke';
 use constant REVOKE_FILE	=> '/revoked';
 use constant HTML_TAGS		=> ['head','style','frameset','noframe','body','table','form','font','input','textarea',
-				    			'th','tr','hr','h1','h2','h3','td','a','p',];
+				    			'br','div','th','tr','hr','h1','h2','h3',,'i','td','a','p',];
 use constant HTML_TEXT		=> ['frame_text','noframe_text','style_text',];
 
 use vars qw(%sortname);
@@ -183,7 +183,7 @@ sub oindex {
  my $retval=1;
     $r->filename($filename);
     return 0 unless opendir HDH, $filename;
- my $msg=$lang->{IndexHead} || 'Index of';
+ my $msg=$lang->{IndexOf} || 'Index of';
     chomp($msg);
  my $ref=$args->{dir};
     if($mode) {
@@ -202,9 +202,9 @@ sub oindex {
     }
     print STDERR "oindex() open $filename\n" if $debug;
     thumb_conf($r) if $cfg->{options} & THUMBNAILS;
-    tagout('H2',$cfg,'', qq~<A NAME="main">$msg $ref</A></H2>~);
+    tagout('h2',$cfg,'', qq~<a name="main">$msg $ref</a></h2>~);
     if($mode) {
-	tagout('FORM',$cfg,qq~METHOD="POST" ACTION="$uri" ENCTYPE="MULTIPART/FORM-DATA"~);
+	tagout('form',$cfg,qq~method="post" action="$uri" enctype="multipart/form-data"~);
 	cmd_form($r,$args,$mode,$cfg->{menu}||DEFAULT_MENU,$cfg);
     }
     $nDir++;
@@ -213,7 +213,7 @@ sub oindex {
     } else {
 	$retval=plain_page($r,$args,\*HDH,$mode,$isroot);
     }
-    print "</FORM>\n" if($mode);
+    print "</form>\n" if($mode);
     closedir HDH;
     $retval;
 }
@@ -376,28 +376,34 @@ sub frames {
  my $footer=gotfooter($r,$cfg);
  my $lang = new Apache::Language($r) if $cfg->{language};
  my $ac = $uri=~m:\?:o ? '&':'?';
-    print STDERR "frames() uri=$uri ac=$ac footer=$footer\n" if $debug;
+ my $msg=qq~src="$uri${ac}frame=main"~;
+    print STDERR "frames() uri=$uri src=$msg footer=$footer\n" if $debug;
     if($cfg->{frameset}) {
-	tagout('FRAMESET',$cfg);
+	tagout('frameset',$cfg);
     } else {
-	print qq~<FRAMESET ROWS=12%,*~,$footer?',15%':'',qq~">\n~,
-	      qq~<FRAME src="$uri${ac}frame=head" name="head">~;
+	print qq~<frameset rows="15%,*~,$footer?',15%':'',qq~">\n~;
     }
-    tagout('FRAME',$cfg,qq~src="$uri${ac}frame=main" name="main"~);
     if($cfg->{frame_text}) {
-	print "$cfg->{frame_text}";
+	my $frametext=$cfg->{frame_text};
+	if($cfg->{frame}) {
+	    $frametext=~s:<mainframe>:<frame $msg $cfg->{frame} />:i;
+	} else {
+	    $frametext=~s:<mainframe>:<frame $msg id="main" />:i;
+	}
+	print "$frametext\n";
     } else {
-	print qq~<FRAME src="$uri${ac}frame=foot" name="foot">~ if $footer;
+	print qq~<frame src="$uri${ac}frame=head" id="head" />\n~;
+    	etagout('frame',$cfg,qq~src="$uri${ac}frame=main"~.$cfg->{frame}?'':'id="main"');
+	print qq~<frame src="$uri${ac}frame=foot" id="foot" />\n~ if $footer;
     }
- my $msg;
     if($cfg->{noframes_text}) {
 	$msg=$cfg->{noframe_text};
     } else {
 	$msg=$lang->{NoFrames} || 'Sorry, your browser can not display frames.  Select the following:';
 	chomp $msg;
     }
-    tagout('NOFRAMES',$cfg);
-    print qq~$msg <A HREF="$uri${ac}frame=none">\n</NOFRAMES>\n</FRAMESET>\n~;
+    tagout('noframes',$cfg);
+    print qq~$msg <a href="$uri${ac}frame=none">\n</noframes>\n</frameset>\n~;
     1;
 }
 
@@ -410,7 +416,7 @@ sub header {
     }
     place_doc($r,$cfg,'header') if $cfg->{header};
     unless($notitle || $cfg->{notitle}) {
-	tagout('H2',$cfg,'','OpenIndex');
+	tagout('h1',$cfg,'','OpenIndex');
 	if($args->{gid}) {
 	 my $lang = new Apache::Language($r) if $cfg->{language};
 	 my $msg=$lang->{user} || 'User';
@@ -422,7 +428,7 @@ sub header {
 		print ",$args->{gidname}[$cnt]";
 	    }
 	}
-	print "</H2>\n";
+	print "</h1>\n";
     }
     1;
 }
@@ -435,16 +441,16 @@ sub httphead {
     return 0 if $r->header_only;
     print STDERR "httpdhead()\n" if $debug;
     print qq~<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0 Transitional//EN""http://www.w3.org/TR/REC-html40/loose.dtd">\n~;
-    print '<HTML>';
-    tagout('HEAD',$cfg);
-    tagout('TITLE',$cfg);
-    print "$title</TITLE>\n";
+    print '<html>';
+    tagout('head',$cfg);
+    tagout('title',$cfg);
+    print "$title</title>\n";
     if($cfg->{style_text}) {
-	tagout('STYLE',$cfg);
-	print "\n$cfg->{style_text}\n</STYLE>\n";
+	tagout('style',$cfg);
+	print "$cfg->{style_text}\n</style>\n";
     }
-    print "</HEAD>\n";
-    tagout('BODY',$cfg) unless $cfg->{frames};
+    print "</head>\n";
+    tagout('body',$cfg) unless $cfg->{frames};
     1;
 }
 
@@ -453,7 +459,7 @@ sub footer {
  my ($r,$cfg)=@_;
     print STDERR "footer() $cfg->{footuri}\n" if $debug;
     if($cfg->{readme}) {
-	tagout('HR',$cfg) unless $cfg->{frames};
+	etagout('hr',$cfg) unless $cfg->{frames};
 	place_doc($r,$cfg,'readme');
     }
     if($cfg->{footuri}) {
@@ -479,11 +485,11 @@ sub cmd_form {
  my $fakedir=$cfg->{fakedir};
  my $textlen=$cfg->{textlen} || DEFAULT_TEXT_LEN;
     if($args->{error}) {
-	tagout('H3',$cfg);
+	tagout('h3',$cfg);
 	if($cfg->{font}) {
-	    tagout('FONT',$cfg,'',"ERROR: $errmsg</FONT></H3>");
+	    tagout('font',$cfg,'',"ERROR: $errmsg</font></h3>");
 	} else {
-	    print qq~<FONT COLOR=#FF0000> ERROR: $errmsg</FONT></H3>~;
+	    print qq~<font color=#FF0000> ERROR: $errmsg</font></h3>~;
 	}
 	$args->{error}=0;
     }
@@ -499,14 +505,15 @@ sub cmd_form {
  my $didit;
  my $msg='';
  my $lang = new Apache::Language($r) if $cfg->{language};
+    tagout('div',$cfg);
     foreach (@$menu) {
 	if($_ eq 'Upload') {
 	    $msg=$lang->{$_} || $_;
 	    chomp $msg;
 	    chomp $msg;
-	    tagout('INPUT',$cfg,qq~TYPE="FILE" NAME="browse" SIZE=$textlen MAXLENGTH=255~);
-	    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="$_" VALUE="$msg"~);
-	    tagout('P',$cfg);
+	    etagout('input',$cfg,qq~type="file" name="browse" size=$textlen maxlength=255~);
+	    etagout('input',$cfg,qq~type="submit" name="$_" value="$msg"~);
+	    etagout('br',$cfg);
 	}
     }
     foreach (@$menu) {
@@ -514,41 +521,42 @@ sub cmd_form {
 	    $msg=$lang->{$_} || $_;
 	    chomp $msg;
 	    chomp $msg;
-	    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="$_" VALUE="$msg"~);
+	    etagout('input',$cfg,qq~type="submit" name="$_" value="$msg"~);
 	}
     }
     unless($cfg->{options} & FANCY_INDEXING) {  # enter the source item if not FANCY
 	$msg=$lang->{src} || 'Select Item';
 	chomp $msg;
-	tagout('P',$cfg);
-	tagout('INPUT',$cfg,
-	    qq~TYPE="TEXT" NAME="src" SIZE=$textlen MAXLENGTH=255 VALUE="$args->{src}"~,$msg);
+	etagout('br',$cfg);
+	etagout('input',$cfg,
+	    qq~TYPE="text" name="src" size=$textlen maxlength=255 value="$args->{src}"~,$msg);
     }
     $msg=$lang->{dst} || 'Destination';
     chomp $msg;
-    tagout('P',$cfg);
-    tagout('INPUT',$cfg,qq~TYPE="TEXT" NAME="dst" SIZE=$textlen MAXLENGTH=255 VALUE="$dst"~,"$msg");
-    tagout('P',$cfg);
+    etagout('br',$cfg);
+    etagout('input',$cfg,qq~type="text" name="dst" size=$textlen maxlength=255 value="$dst"~,"$msg");
+    etagout('p',$cfg);
     if($args->{isadmin}) {
      my $halflen=($textlen+($textlen%2))/2;
 	$msg=$lang->{SetGID} || 'SetGID';
 	chomp $msg;
 	chomp $msg;
-	tagout('INPUT',$cfg,qq~TYPE="TEXT" NAME="group" SIZE=$halflen MAXLENGTH=255~);
-	tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="SetGID" VALUE="$msg"~);
+	etagout('input',$cfg,qq~type="text" name="group" size=$halflen maxlength=255~);
+	etagout('input',$cfg,qq~type="submit" name="SetGID" value="$msg"~);
 	$msg=$lang->{Revoke} || 'Revoke';
 	chomp $msg;
 	chomp $msg;
-	tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="Revoke" VALUE="$msg"~) if $cfg->{revoke};
+	etagout('input',$cfg,qq~type="submit" name="Revoke" value="$msg"~) if $cfg->{revoke};
 	$msg=$lang->{Debug} || 'Debug';
 	chomp $msg;
 	chomp $msg;
-	tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="Debug" VALUE="$msg"~) if $debug;
-	tagout('P',$cfg);
+	etagout('input',$cfg,qq~type="submit" name="Debug" value="$msg"~) if $debug;
+	etagout('p',$cfg);
     }
-    print qq~<INPUT TYPE="HIDDEN" NAME="proc" VALUE="Menu">\n~;
-    print qq~<INPUT TYPE="HIDDEN" NAME="all" VALUE="$args->{all}">\n~ if $args->{all};
-    print qq~<INPUT TYPE="HIDDEN" NAME="frame" VALUE="$args->{frame}">\n~ if $args->{frame};
+    print qq~<input type="hidden" name="proc" value="Menu" />\n~;
+    print qq~<input type="hidden" name="all" value="$args->{all}" />\n~ if $args->{all};
+    print qq~<input type="hidden" name="frame" value="$args->{frame}" />\n~ if $args->{frame};
+    print "</div>\n";
     1;
 }
 
@@ -557,7 +565,7 @@ sub plain_page {
  my $cfg = Apache::ModuleConfig->get($r);
  my $ignore_regex = join('$|^',@{$cfg->{ignore}});
  my $hide=!($args->{isadmin} && $dodump);
-    print "<UL>\n";
+    print "<ul>\n";
     while (my $file = readdir $dirhandle) {
      my $stub;
 	next if $file=~m/^\.$/o; # Never display '.' directory
@@ -565,7 +573,7 @@ sub plain_page {
 	next if $file eq ".." and $isroot;
      my $subr = $r->lookup_file($file);
 	stat $subr->finfo;
-	print '    <LI><A HREF="',$args->{dir},$file;
+	print '    <li><a href="',$args->{dir},$file;
 	print '/' if -d _;
 	if($mode) {
 	    if($file eq '..') {
@@ -579,12 +587,12 @@ sub plain_page {
 	}
 	$file=~s:\..*::o if $cfg->{options} & HIDE_EXT;
     	if($file eq $args->{file}) { # selected file goes BOLD
-	    print qq~"><B>$file</B></A></LI>\n~;
+	    print qq~"><b>$file</b></a></li>\n~;
     	} else {
-	    print qq~">$file</A></LI>\n~;
+	    print qq~">$file</a></li>\n~;
     	}
     }
-    print "</UL>\n";
+    print "</ul>\n";
     1;
 }
 
@@ -596,8 +604,8 @@ sub fancy_page {
  my $uri = $r->uri;
  my $lang = new Apache::Language($r) if $cfg->{language};
  my $list = read_dir($r,$args,$dirhandle);
-    tagout('TABLE',$cfg);
-    tagout('TR',$cfg);
+    tagout('table',$cfg);
+    tagout('tr',$cfg);
     if($cfg->{options} & SUPPRESS_COLSORT) {
 	foreach('N','M','S','D') {
 	    delete $args->{@_};
@@ -605,24 +613,24 @@ sub fancy_page {
     }
  my $listing=do_sort($list,$args,$cfg->{default_order},$cfg->{options} & FOLDERS_FIRST);
 #Permission header
-    tagout('TH',$cfg,'ALIGN="LEFT"','Permission</TH>') if $cfg->{options} & SHOW_PERMS;
+    tagout('th',$cfg,'align="left"','Permission</th>') if $cfg->{options} & SHOW_PERMS;
 #Owner header
-    tagout('TH',$cfg,'ALIGN="LEFT"','Owner</TH>') if $args->{isadmin};
+    tagout('th',$cfg,'align="left"','Owner</th>') if $args->{isadmin};
 #Group header
     if($args->{gid}) {
 	$msg=$args->{isadmin}?"Group":"Access";
-	tagout('TH',$cfg,'ALIGN="LEFT"',"$msg</TH>");
+	tagout('th',$cfg,'align="left"',"$msg</th>");
     }
 #Select header
-    tagout('TH',$cfg,'ALIGN="CENTER"','Select</TH>') if $mode;
+    tagout('th',$cfg,'align="center"','Select</th>') if $mode;
 #Icon header
-    tagout('TH',$cfg,'ALIGN="LEFT"','Icon</TH>');
+    tagout('th',$cfg,'align="left"','Icon</th>');
 #Name, Last Modified, Size, and Description headers
     foreach ('N', 'M', 'S', 'D') {
 	next if $cfg->{options} & SUPPRESS_LAST_MOD && $_ eq 'M';
 	next if $cfg->{options} & SUPPRESS_SIZE     && $_ eq 'S';
 	next if $cfg->{options} & SUPPRESS_DESC     && $_ eq 'D';
-	tagout('TH',$cfg,'ALIGN="LEFT"');
+	tagout('th',$cfg,'align="left"');
 	$msg=$lang->{$sortname{$_}} || $sortname{$_};
 	chomp($msg);
 	chomp($msg);
@@ -637,13 +645,14 @@ sub fancy_page {
 	    } else {
 		$query = 'A';
 	    }
-	    print qq~<A HREF="?$_=$query~,$args->{frame}?"&frame=$args->{frame}":'',qq~"><I>$msg</I></A>~;
+	    print qq~<a href="?$_=$query~,$args->{frame}?"&frame=$args->{frame}":'',qq~">~;
+	    tagout('i',$cfg,'',"$msg</i></a>");
 	} else {
 	    print $msg;
     	}
-        print "</TH>\n";
+        print "</th>\n";
     }
-    print "</TR>";
+    print '</tr>';
 #End of header
     for my $entry (@$listing) {
      my $stub;
@@ -658,18 +667,18 @@ sub fancy_page {
 	    $label=~s:\..*::o if $cfg->{options} & HIDE_EXT;
 	}
      my $img = $list->{$entry}{icon};
-	tagout('TR',$cfg,'ALIGN="LEFT"');
+	tagout('tr',$cfg,'align="left"');
 #Permission data
-	tagout('TD',$cfg,'',"$list->{$entry}{mode}</TD>") if $cfg->{options} & SHOW_PERMS;
+	tagout('td',$cfg,'',"$list->{$entry}{mode}</td>") if $cfg->{options} & SHOW_PERMS;
 #Owner data
 	if($args->{isadmin}) {
 	 my $pname=getpwuid($list->{$entry}{uid})||"$list->{$entry}{uid}";
-	    tagout('TD',$cfg,'',"${pname}</TD>");
+	    tagout('td',$cfg,'',"${pname}</td>");
 	}
 #Group data
 	if($args->{gid}) {
 	 my $pname=getgrgid($list->{$entry}{gid})||"$list->{$entry}{gid}";
-	    tagout('TD',$cfg,'',"${pname}</TD>");
+	    tagout('td',$cfg,'',"${pname}</td>");
 	}
 	if($mode && $entry eq '..') {
 	    $stub=$args->{dir};
@@ -680,16 +689,16 @@ sub fancy_page {
 #Select checkbox
 	if($mode) {
 	    if($entry eq '..') {
-		print "<TD></TD>\n";
+		print "<td></td>\n";
 	    } else {
-		tagout('TD',$cfg,'ALIGN="CENTER"');
-		$msg=qq~TYPE="CHECKBOX" NAME="${entry}"~;
-		$msg.=' CHECKED' if $args->{all};
-		tagout('INPUT',$cfg,$msg,'</TD>');
+		tagout('td',$cfg,'align="center"');
+		$msg=qq~TYPE="checkbox" name="${entry}"~;
+		$msg.=' checked' if $args->{all};
+		etagout('input',$cfg,$msg,'</td>');
 	    }
 	}
 #Icon
-	tagout('TD',$cfg);
+	tagout('td',$cfg);
 	if($cfg->{options} & ICONS_ARE_LINKS) {
 	    $msg=$args->{dir};
 	    $msg=~s:/$cfg->{fakedir}/:/: if $mode & URI_ROOT && !$isdir;
@@ -701,16 +710,16 @@ sub fancy_page {
 		$msg.="${ac}child=$stub" if $stub;
 		$msg.='#main';
 	    }
-	    tagout('A',$cfg,qq~A HREF="$msg"~);
+	    tagout('a',$cfg,qq~a href="$msg"~);
 	}
 	print 
-qq~<IMG WIDTH="$list->{$entry}{width}" HEIGHT="$list->{$entry}{height}" SRC="$img" ALT="[$list->{$entry}{alt}]" BORDER="0">~;
-	print "</A>" if ($cfg->{options} & ICONS_ARE_LINKS);
-	print "</TD>\n";
+qq~<img width="$list->{$entry}{width}" height="$list->{$entry}{height}" src="$img" alt="[$list->{$entry}{alt}]" border="0" />~;
+	print "</a>" if ($cfg->{options} & ICONS_ARE_LINKS);
+	print "</td>\n";
 #Name data
 	$msg=$args->{dir};
 	$msg=~s:/$cfg->{fakedir}/:/: if $mode & URI_ROOT && !$isdir;
-	tagout('TD',$cfg);
+	tagout('td',$cfg);
 	$msg.=$entry;
 	$msg.='/' if $isdir;
 	$msg.="?frame=$args->{frame}" if $args->{frame};
@@ -719,47 +728,47 @@ qq~<IMG WIDTH="$list->{$entry}{width}" HEIGHT="$list->{$entry}{height}" SRC="$im
 	    $msg.="${ac}child=$stub" if $stub;
 	    $msg.='#main';
 	}
-	tagout('A',$cfg,qq~A HREF="$msg"~);
+	tagout('a',$cfg,qq~a href="$msg"~);
 	if($entry eq $args->{file}) {  # selected file goes BOLD
-	    print qq~<B>$label</B>\n~;
+	    print qq~<b>$label</b>\n~;
 	} else {
 	    print qq~$label~;
 	}
-	print qq~</A></TD>\n~;
+	print qq~</a></td>\n~;
 #Last Modified data
 	unless($cfg->{options} & SUPPRESS_LAST_MOD) {
-	    tagout('TD',$cfg);
-	    print qq~$list->{$entry}{modnice}</TD>~;
+	    tagout('td',$cfg);
+	    print qq~$list->{$entry}{modnice}</td>~;
 	}
 #Size data
 	unless($cfg->{options} & SUPPRESS_SIZE ) {
-	    tagout('TD',$cfg,qq~ALIGN="CENTER"~);
-	    print $list->{$entry}{sizenice},"</TD>\n";
+	    tagout('td',$cfg,qq~align="center"~);
+	    print $list->{$entry}{sizenice},"</td>\n";
 	}
 #Description data
 	unless($cfg->{options} & SUPPRESS_DESC) {
-	    tagout('TD',$cfg);
-	    print $list->{$entry}{desc},'</TD>';
+	    tagout('td',$cfg);
+	    print $list->{$entry}{desc},'</td>';
 	}
-	print "</TR>\n";	  
+	print "</tr>\n";
     }
     if($mode && $args->{bytes} && !($cfg->{options} & SUPPRESS_SIZE)) {
-	print '<TD></TD>' if $cfg->{options} & SHOW_PERMS;
-	print '<TD></TD>' if $args->{isadmin};
-	print '<TD></TD>' if $args->{gid};
-	print '<TD></TD>';
-	print '<TD></TD>' if $cfg->{options} & ICONS_ARE_LINKS;
-	print '<TD></TD>';
-	print '<TD></TD>' unless ( $cfg->{options} & SUPPRESS_LAST_MOD );
-	tagout('TD',$cfg,qq~ALIGN="CENTER"~);
-	print '<B>',size_string($args->{bytes}),"</B></TD>\n";
+	print '<td></td>' if $cfg->{options} & SHOW_PERMS;
+	print '<td></td>' if $args->{isadmin};
+	print '<td></td>' if $args->{gid};
+	print '<td></td>';
+	print '<td></td>' if $cfg->{options} & ICONS_ARE_LINKS;
+	print '<td></td>';
+	print '<td></td>' unless ( $cfg->{options} & SUPPRESS_LAST_MOD );
+	tagout('td',$cfg,qq~align="center"~);
+	print '<b>',size_string($args->{bytes}),"</b></td>\n";
     }
-    print "</TABLE>\n";
+    print "</table>\n";
     if($debug && $dodump) {
 	use Data::Dumper;
-	print "<HR><PRE>\%list\n";
+	print "<hr /><pre>\%list\n";
 	print Dumper \%$list;
-	print "</PRE>";
+	print "</pre>";
     }
     1;
 }
@@ -850,7 +859,7 @@ sub Revoke {
     $r->no_cache(1);	# Always make sure that the data is not cached
     return SKIP_INDEX unless httphead($r,"OpenIndex $cmdname");
     header($r,$args,$cfg) unless $args->{frame}; 
-    tagout('H3',$cfg,'',"OpenIndex $cmdname</H3>");
+    tagout('h3',$cfg,'',"OpenIndex $cmdname</h3>");
  my $gotdata;
  my $type;
  my $name;
@@ -860,12 +869,11 @@ sub Revoke {
 	    unless($gotdata) {
 		$msg=$lang->{Revoked} || 'The following have been revoked:';
 		print "$msg";
-		tagout('P',$cfg);
-		tagout('TABLE',$cfg,'COL="2"');
-		tagout('TR',$cfg);
-		tagout('TH',$cfg,' Type </TH>');
-		tagout('TH',$cfg,' Name </TH>');
-		tagout('TR',$cfg);
+		etagout('p',$cfg);
+		tagout('table',$cfg,'col="2"');
+		tagout('tr',$cfg);
+		tagout('th',$cfg,' Type </th>');
+		tagout('th',$cfg,' Name </th></tr>');
 		$gotdata=1;
 	    }
 	    if($ruser) {
@@ -876,41 +884,39 @@ sub Revoke {
 		$type='gid';
 		$name=getgrgid $rgid || $rgid;
 	    }
-	    tagout('TD',$cfg);
-	    print " $type </TD>";
-	    tagout('TD',$cfg);
-	    print " $name </TD>";
-	    tagout('TR',$cfg);
+	    tagout('tr',$cfg);
+	    tagout('td',$cfg,''," $type </td>");
+	    tagout('td',$cfg,''," $name </td></tr>");
 	}
     }
-    print "</TABLE>\n" if $gotdata;
+    print "</table>\n" if $gotdata;
     unless($gotdata) {
 	$msg=$lang->{NoUsers} || 'No user or group revoke information available';
 	print "$msg";
-	tagout('P',$cfg);
+	etagout('p',$cfg);
     }
-    tagout('FORM',$cfg,qq~METHOD="POST" ACTION="$uri" ENCTYPE="MULTIPART/FORM-DATA"~);
-    tagout('INPUT',$cfg,qq~TYPE="TEXT" NAME="id" SIZE=$halflen MAXLENGTH=255~);
+    tagout('form',$cfg,qq~method="post" action="$uri" enctype="multipart/form-data"~);
+    etagout('input',$cfg,qq~type="text" name="id" size=$halflen maxlength=255~);
 	$msg=$lang->{EnableUID} || 'Enable User';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="enauid" VALUE="$msg"~);
+    etagout('input',$cfg,qq~type="submit" name="enauid" value="$msg"~);
 	$msg=$lang->{DisableUID} || 'Disable User';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="disuid" VALUE="$msg"~);
+    etagout('input',$cfg,qq~type="submit" name="disuid" value="$msg"~);
 	$msg=$lang->{EnableGID} || 'Enable GID';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="enagid" VALUE="$msg"~);
+    etagout('input',$cfg,qq~type="submit" name="enagid" value="$msg"~);
 	$msg=$lang->{DisableGID} || 'Disable GID';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="disgid" VALUE="$msg"~);
+    etagout('input',$cfg,qq~type="submit" name="disgid" value="$msg"~);
     tagout('P',$cfg);
 	$msg=$lang->{Return} || 'Return';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="return" VALUE="$msg"~);
-    tagout('INPUT',$cfg,qq~TYPE="HIDDEN" NAME="proc" VALUE="Revoke"~);
+    etagout('input',$cfg,qq~type="submit" name="return" value="$msg"~);
+    etagout('input',$cfg,qq~type="hidden" name="proc" value="Revoke"~);
     hidenargs($args);
-    print '</FORM>';
-    tagout('HR',$cfg);
+    print '</form>';
+    etagout('hr',$cfg);
     $r->log->notice(__PACKAGE__." $args->{user}: Revoke:");
     SKIP_INDEX;
 }
@@ -972,7 +978,7 @@ sub Edit {
     $r->no_cache(1);	# Always make sure that the data is not cached
     return SKIP_INDEX unless httphead($r,"OpenIndex $relsrc");
     header($r,$args,$cfg) unless $args->{frame}; 
-    tagout('H3',$cfg,'',qq~$cmdname "$relsrc"</H3>~);
+    tagout('h3',$cfg,'',qq~$cmdname "$relsrc"</h3>~);
     if($info{status} eq 'out' && $args->{user} ne $info{user}) {
 	$msg=$lang->{warning} || 'WARNING';
 	$errmsg="${msg}:";
@@ -983,11 +989,11 @@ sub Edit {
 	$msg=$lang->{CheckedOut} || 'Currently has checked out';
 	$errmsg.=qq~ $msg "$relsrc"~;
 	$r->log->warn(__PACKAGE__." Edit: $errmsg");
-	tagout('H3',$cfg);
+	tagout('h3',$cfg);
 	if($cfg->{font}) {
-	    tagout('FONT',$cfg,'',"ERROR: $errmsg</FONT></H3>");
+	    tagout('font',$cfg,'',"ERROR: $errmsg</font></h3>");
 	} else {
-	    print qq~<FONT COLOR=#FF0000> ERROR: $errmsg</FONT></H3>~;
+	    print qq~<font color=#FF0000> ERROR: $errmsg</font></h3>~;
 	}
     }
     unless(open INIFILE, ">$inifile") {
@@ -1015,20 +1021,20 @@ sub Edit {
 	chomp $msg;
 	$phrase.=" ${msg}=$info{time}";
 	print "$phrase";
-	tagout('P',$cfg);
+	etagout('p',$cfg);
     }
-    tagout('FORM',$cfg,qq~<FORM METHOD="POST" ACTION="$uri" ENCTYPE="MULTIPART/FORM-DATA"~);
+    tagout('form',$cfg,qq~<form method="post" action="$uri" enctype="multipart/form-data"~);
 	$msg=$lang->{Undo} || 'Undo';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="RESET" NAME="undo" VALUE="$msg"~);;
+    etagout('input',$cfg,qq~type="reset" name="undo" value="$msg"~);;
 	$msg=$lang->{Quit} || 'Quit';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="quit" VALUE="$msg"~);
+    etagout('input',$cfg,qq~type="submiT" name="quit" value="$msg"~);
 	$msg=$lang->{Save} || 'Save';
 	chomp $msg;
-    tagout('INPUT',$cfg,qq~TYPE="SUBMIT" NAME="save" VALUE="$msg"~);
-    tagout('P',$cfg);
-    tagout('TEXTAREA',$cfg,qq~NAME="text" ROWS="24" COLS="80" WRAP="physical"~);
+    etagout('input',$cfg,qq~type="submIt" name="save" value="$msg"~);
+    etagout('P',$cfg);
+    tagout('textarea',$cfg,qq~name="text" rows="24" cols="80" wrap="physical"~);
     if($opened) {
 	while(<ITEM>) {
 	    chomp;
@@ -1037,20 +1043,20 @@ sub Edit {
 	close ITEM;
     }
     ($inifile=$relsrc)=~s:^(.*/)(.+):$1\.$2\.ini:;
-    print '</TEXTAREA>';
-    tagout('P',$cfg);
-    print qq~<INPUT TYPE="HIDDEN" NAME="proc" VALUE="Edit">\n~,
-	qq~<INPUT TYPE="HIDDEN" NAME="edit" VALUE="$relsrc">\n~,
-	qq~<INPUT TYPE="HIDDEN" NAME="saver" VALUE="$info{user}">\n~,
-	qq~<INPUT TYPE="HIDDEN" NAME="info" VALUE="$inifile">\n~;
+    print '</textarea>';
+    etagout('P',$cfg);
+    print qq~<input type="hidden" name="proc" value="Edit" />\n~,
+	qq~<input type="hidden" name="edit" value="$relsrc" />\n~,
+	qq~<input type="hidden" name="saver" value="$info{user}" />\n~,
+	qq~<input type="hidden" name="info" value="$inifile" />\n~;
     hidenargs($args);
-    print qq~</FORM>\n~;
+    print qq~</form>\n~;
     if($debug && $dodump) {
 	use Data::Dumper;
-	print "<HR><PRE>\%info\n";
+	print "<hr /><pre>\%info\n";
 	print Dumper \%info;
-	print '</PRE>';
-	tagout('HR',$cfg);
+	print '</pre>';
+	etagout('hr',$cfg);
     }
     $r->log->notice(__PACKAGE__." $args->{user}: Edit: $src");
     SKIP_INDEX;
@@ -1562,22 +1568,27 @@ sub revoker {
 # End of internal call back routines
 
 sub tagout {
- my ($tag,$cfg,$prefix,$suffix)=@_;
+ my ($tag,$cfg,$prefix,$suffix,$empty)=@_;
  my $conf=$cfg->{lc $tag};
     print "<$tag";
     print " $prefix" if $prefix;
     print " $conf" if $conf;
-    print '>';
+    print $empty?' />':'>';
     print "$suffix" if $suffix;
     print "\n";
 }
 
+sub etagout {
+ my ($tag,$cfg,$prefix,$suffix)=@_;
+ tagout($tag,$cfg,$prefix,$suffix,1);
+}
+
 sub hidenargs {
  my ($args) =@_;
-    print qq~<INPUT TYPE="HIDDEN" NAME="dst" VALUE="$args->{dst}">\n~ if $args->{dst};
-    print qq~<INPUT TYPE="HIDDEN" NAME="src" VALUE="$args->{src}">\n~ if $args->{src};
-    print qq~<INPUT TYPE="HIDDEN" NAME="group" VALUE="$args->{group}">\n~ if $args->{group};
-    print qq~<INPUT TYPE="HIDDEN" NAME="frame" VALUE="$args->{frame}">\n~ if $args->{frame};
+    print qq~<input type="hidden" name="dst" value="$args->{dst}" />\n~ if $args->{dst};
+    print qq~<input type="hidden" name="src" value="$args->{src}" />\n~ if $args->{src};
+    print qq~<input type="hidden" name="group" value="$args->{group}" />\n~ if $args->{group};
+    print qq~<input type="hidden" name="frame" value="$args->{frame}" />\n~ if $args->{frame};
 }
 
 sub substrcnt {
@@ -1646,12 +1657,12 @@ sub outfile {
     return 0 unless(open OFILE, "<$file");
     while(<OFILE>) {
 	if($suppress) {
-	    s:</?HTML.*>\s*::oi if m:</?HTML[\s>]:oi;
-	    s:</?BODY.*>\s*::oi if m:</?BODY[\s>]:oi;
-	    if(m:<HEAD[\s>]:oi) {
+	    s:</?html.*>\s*::oi if m:</?html[\s>]:oi;
+	    s:</?body.*>\s*::oi if m:</?body[\s>]:oi;
+	    if(m:<head[\s>]:oi) {
 		do {
-		    if(m:</HEAD>:oi) {
-			s:.*</HEAD>\s*::oi;
+		    if(m:</head>:oi) {
+			s:.*</head>\s*::oi;
 			goto SHOW;
 		    }
 		} while(<OFILE>);
@@ -1708,12 +1719,12 @@ sub place_doc {
 	    if(stat $subr->finfo) {
 		$ofile=$subr->filename();
 		$ishtml=1 if $subr->content_type() eq 'text/html';
-		print '<PRE>' unless $ishtml;
+		print '<pre>' unless $ishtml;
 		print STDERR "$ofile\n" if $debug;
 		outfile($ofile,$cfg->{options} & SUPPRESS_PREAMBLE);
 		unless($ishtml) {
-		    print '</PRE>';
-		    tagout('HR',$cfg);
+		    print '</pre>';
+		    etagout('hr',$cfg);
 		}
 		next;
 	    }
@@ -1722,12 +1733,12 @@ sub place_doc {
 	    if(stat $subr->finfo) {
 		$ofile=$subr->filename();
 		$ishtml=1 if $subr->content_type() eq 'text/html';
-		print '<PRE>' unless $ishtml;
+		print '<pre>' unless $ishtml;
 		print STDERR "$ofile\n" if $debug;
 		outfile($ofile,$cfg->{options} & SUPPRESS_PREAMBLE);
 		unless($ishtml) {
-		    print '</PRE>';
-		    tagout('HR',$cfg);
+		    print '</pre>';
+		    etagout('hr',$cfg);
 		}
 		next;
 	    }
@@ -1956,7 +1967,7 @@ sub handler {
 		unless($frame) {
 		    $retval=frames($r,\%args,$cfg);
 		} else {
-		    $retval=header($r,\%args,$cfg,!$mode) if $retval && $frame eq 'head';
+		    $retval=header($r,\%args,$cfg) if $retval && $frame eq 'head';
 		    $retval=oindex($r,\%args,$filename,$mode,$cfg)
 			if $retval && $frame eq 'main' && ($mode & URI_MARK);
 		    $retval=oindex($r,\%args,$filename,$mode,$cfg)
@@ -1984,12 +1995,12 @@ sub handler {
 	}
 	if($debug && $dodump) {
 	    use Data::Dumper;
-	    print "<HR><PRE>\n";
+	    print "<hr /><pre>\n";
 	    print "\$cfg\n";
 	    print Dumper $cfg;
-	    print "</PRE><HR><PRE>\%args\n";
+	    print "</pre><hr /><pre>\%args\n";
 	    print Dumper \%args;
-	    print "</PRE><HR><PRE>Global variables\n";
+	    print "</pre><hr /><pre>Global variables\n";
 	    if($cfg->{revoke}) {
 		print "\$users\n";
 		print Dumper $users;
@@ -1998,12 +2009,12 @@ sub handler {
 	    print Dumper %commands;
 	    print "\$iconfig\n";
 	    print Dumper $iconfig;
-	    print "</PRE><HR><PRE>Environment variables\n";
+	    print "</pre><hr /><pre>Environment variables\n";
 	    print Dumper $r->subprocess_env();
-	    print "</PRE><HR>\n";
+	    print "</pre><hr />\n";
 	}
-	print "</BODY>" unless $args{frame};
-	print "</HTML>\n";
+	print "</body>" unless $args{frame};
+	print "</html>\n";
 	print STDERR "retval=$retval\n===== ", __PACKAGE__, " DEBUG STOP  =====\n" if $debug;
     } else {
 	$retval=FORBIDDEN;
@@ -2461,26 +2472,41 @@ sub set_config ($$$) {
 
 sub IndexHtmlTag($$$;*) {
  my ($cfg,$parms,$directive,$cfg_fh) = @_;
- my ($key,$value)=$directive=~m:(\w+)\s+(.+):o;
- my $htmltags=HTML_TAGS;
-    warn "IndexHtmlTag $directive: No argument" unless $key;
-    return unless $key;
+ my ($key,$action,$value)=$directive=~m:(\w+)\s+([+-])?(.+):o;
+    unless($key) {
+	warn "IndexHtmlTag $directive: No argument";
+	return;
+    }
     $key=lc($key);
- my $x=0;
-    foreach(@$htmltags){if($key eq $_){$cfg->{$key}=$value;$x=1;last;}}
-    warn "UNKNOWN tag: IndexHtmlTag $directive" unless $x;
+    warn "UNKNOWN tag: IndexHtmlTag $directive" unless 
+	set_cfg_tag($cfg,HTML_TAGS,$action,$key,$value);
 }
 
 sub IndexHtmlText($$$;*) {
  my ($cfg,$parms,$directive,$cfg_fh) = @_;
- my $htmltext=HTML_TEXT;
- my ($key,$value)=$directive=~m:(\w+)\s+(.+):o;
-    warn "IndexHtmlText $directive: No argument" unless $key;
-    return unless $key;
+ my ($key,$action,$value)=$directive=~m:(\w+)\s+([+-])?(.*):o;
+    unless($key) {
+	warn "IndexHtmlText $directive: No argument";
+	return;
+    }
     $key=lc($key).'_text';
- my $x=0;
-    foreach(@$htmltext){if($key eq $_){$cfg->{$key}=$value;$x=1;last;}}
-    warn "UNKNOWN tag: IndexHtmlText $directive" unless $x;
+    warn "UNKNOWN tag: IndexHtmlText $directive" unless 
+	set_cfg_tag($cfg,HTML_TEXT,$action,$key,$value);
+}
+
+sub set_cfg_tag {
+ my ($cfg,$tagar,$action,$key,$value) = @_;
+    foreach(@$tagar) {
+	if($key eq $_) {
+	    if($action eq '+') { # '+' action provides multiple lines
+		$cfg->{$key}.="\n$value";
+	    } else {
+		$cfg->{$key}="$value";
+	    }
+	    return 1;
+	}
+    }
+    0;
 }
 # End of Configuration Stuff
 
@@ -2488,11 +2514,11 @@ sub status {
  my ($r, $q) = @_;
  my @s;
  my $cfg = Apache::ModuleConfig->get($r);
-    push (@s,"<B>" , __PACKAGE__ , " (ver $Apache::OpenIndex::VERSION) statistics</B><BR>");
-    push (@s,"Done ".$nDir.   " listings so far<BR>");
-    push (@s,"Done ".$nRedir. " redirects so far<BR>");
-    push (@s,"Done ".$nIndex. " indexes so far<BR>");
-    push (@s,"Done ".$nThumb. " thumbnails so far<BR>");
+    push (@s,"<b>" , __PACKAGE__ , " (ver $Apache::OpenIndex::VERSION) statistics</b><br />");
+    push (@s,"Done ".$nDir.   " listings so far<br />");
+    push (@s,"Done ".$nRedir. " redirects so far<br />");
+    push (@s,"Done ".$nIndex. " indexes so far<br />");
+    push (@s,"Done ".$nThumb. " thumbnails so far<br />");
     use Data::Dumper;
     my $string = Dumper $cfg;
     push (@s, $string);
@@ -3027,11 +3053,6 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
     of the following autoindex and AutoIndex directives require
     FancyIndexing.
     
-=item * HideExt boolean
-
-    The HideExt directive tells OpenIndex to not display the
-    file extention within the index display.
-    
 =item * HeaderName file file ...
 
     Inserts a list of files displayed at the top of the document
@@ -3105,15 +3126,54 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
     
     Print file permissions. Defaults to false.
 
+=item * IndexOptions SuppressHtmlPreamble
+
+    When a header or footer file is included with the 
+       HeaderName file file ...
+       ReadmeName file file ...
+    directives, the <HTML> <HEAD> and <BODY> tags are stripted.
+    
+=item * IndexOptions FoldersFirst
+
+    The folders will be presented first in the index listings.
+    
+=item * IndexOptions HideExt
+
+    The HideExt directive tells OpenIndex to not display the
+    file extention within the index display.
+    
 =item * IndexHtmlTag tag attributes
 
     This directive specifies the tag's attributes that will be
     inserted into the tag.  For example: <TAG attributes>
 
-=item * IndexHtmlText tag text
+    If the first character of attributes is a '+', it will 
+    append the following attributes to the current tag's
+    attributes.  If the first character of attributes is a '-'
+    or not a '+', the current tag's attributes will be set to
+    the following attributes string.  Note that an initial '+'
+    or '-' charater is always striped.
+
+    HINT: If you need to have the first line start with a '+' or a
+    '-' character, use "-+ . . ." or "-- . . .".
+
+=item * IndexHtmlText tag [+|-]text
 
     This directive specifies the tag text that will be inserted 
     within the tag.  For example: <TAG> text </TAG>
+
+    If the first character of text is a '+', it will append 
+    the following text to the current tag's text.  If the first
+    character of text is a '-' or not a '+', the current tag's
+    text will be set to the following text.  Note that an initial
+    '+' or '-' charater is always striped.
+
+    HINT: If you need to have the first line start with a '+' or a
+    '-' character, use "-+ . . ." or "-- . . .".
+
+    The frameset tag is special in that you will need to place
+    <mainframe> in the position where the index (main) frame is to
+    be placed  In this way any arbitrary frameset can be supported.
 
 =item * IndexURIHead value
 
@@ -3514,7 +3574,7 @@ cache or the directories will fill up.
 =head1 SEE ALSO
 
 perl(1), L<Apache>(3), L<Apache::Icon>(3), L<Image::Magick>(3) .
-L<Apache::AutoIndex>93)
+L<Apache::AutoIndex>(3)
     
 =head1 SUPPORT
 

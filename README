@@ -1,3 +1,5 @@
+NAME
+
 Apache::OpenIndex - Perl Open Index manager for a Apache Web server
 
 SYNOPSIS
@@ -277,11 +279,6 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
     of the following autoindex and AutoIndex directives require
     FancyIndexing.
     
-* HideExt boolean
-
-    The HideExt directive tells OpenIndex to not display the
-    file extention within the index display.
-    
 * HeaderName file file ...
 
     Inserts a list of files displayed at the top of the document
@@ -353,15 +350,54 @@ AutoIndex DIRECTIVES
     
     Print file permissions. Defaults to false.
 
+* IndexOptions SuppressHtmlPreamble
+
+    When a header or footer file is included with the 
+       HeaderName file file ...
+       ReadmeName file file ...
+    directives, the <HTML> <HEAD> and <BODY> tags are stripted.
+    
+* IndexOptions FoldersFirst
+
+    The folders will be presented first in the index listings.
+    
+* IndexOptions HideExt
+
+    The HideExt directive tells OpenIndex to not display the
+    file extention within the index display.
+    
 * IndexHtmlTag tag attributes
 
     This directive specifies the tag's attributes that will be
     inserted into the tag.  For example: <TAG attributes>
 
-* IndexHtmlText tag text
+    If the first character of attributes is a '+', it will 
+    append the following attributes to the current tag's
+    attributes.  If the first character of attributes is a '-'
+    or not a '+', the current tag's attributes will be set to
+    the following attributes string.  Note that an initial '+'
+    or '-' charater is always striped.
+
+    HINT: If you need to have the first line start with a '+' or a
+    '-' character, use "-+ . . ." or "-- . . .".
+
+* IndexHtmlText tag [+|-]text
 
     This directive specifies the tag text that will be inserted 
     within the tag.  For example: <TAG> text </TAG>
+
+    If the first character of text is a '+', it will append 
+    the following text to the current tag's text.  If the first
+    character of text is a '-' or not a '+', the current tag's
+    text will be set to the following text.  Note that an initial
+    '+' or '-' charater is always striped.
+
+    HINT: If you need to have the first line start with a '+' or a
+    '-' character, use "-+ . . ." or "-- . . .".
+
+    The frameset tag is special in that you will need to place
+    <mainframe> in the position where the index (main) frame is to
+    be placed  In this way any arbitrary frameset can be supported.
 
 * IndexURIHead value
 
@@ -756,8 +792,8 @@ cache or the directories will fill up.
 
 SEE ALSO
 
-perl(1), L<Apache>(3), L<Apache::Icon>(3), L<Image::Magick>(3) .
-L<Apache::AutoIndex>93)
+perl(1), Apache(3), Apache::Icon(3), Image::Magick(3) .
+Apache::AutoIndex(3)
     
 SUPPORT
 
