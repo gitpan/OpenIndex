@@ -91,12 +91,27 @@ sub MD5back {
     }
     return SKIP_INDEX unless httphead($r,"$cmdname results");
     header($r,$cfg) unless $cfg->{frames}; 
-    print qq~<H3>$cmdname results</H3>\n~,
-	qq~<TABLE COL="2" BORDER>\n~,
-	qq~<TR><TH> Filename </TH><TH> MD5 Hash </TH></TR>\n~;
+    tagout('H3',$cfg,'',qq~$cmdname results</H3>~);
+    if($args->{error}) {
+	if($cfg->{font}) {
+	    tagout('FONT',$cfg,'',"ERROR: $errmsg</FONT></H3>");
+	} else {
+	    print qq~<FONT COLOR=#FF0000> ERROR: $errmsg</FONT></H3>~;
+	}
+    }
+    if($cfg->{table}) {
+	tagout('TABLE',$cfg,qq~COL="2"~);
+    } else {
+	print qq~<TABLE COL="2" BORDER>~;
+    }
+    tagout('TR',$cfg);
+    tagout('TH',$cfg,'',qq~ Filename </TH>~);
+    tagout('TH',$cfg,'',qq~ MD5 Hash </TH></TR>~);
     while(<FILE>) {
 	my($file,$digest)=split /=/;
-	print "<TR><TD>$file</TD><TD>$digest</TD></TR>\n";
+	tagout('TR',$cfg);
+	tagout('TD',$cfg,'',qq~$file</TD>~);
+	tagout('TD',$cfg,'',qq~$digest</TD></TR>~);
     }
     $uri.="?frame=main" if $cfg->{frames};
     if($args->{dst}) {
@@ -107,8 +122,8 @@ sub MD5back {
 	}
 	$uri.=escape_uri($args->{dst});
     }
-    print qq~</TABLE>\n~,
-	qq~<P><A HREF="$uri">Back to Index</A>\n~;
+    print '</TABLE>';
+    tagout('P',$cfg,'',qq~<A HREF="$uri">Back to Index</A>~);
     print "</BODY>" unless $cfg->{frames};
     print "</HTML>\n";
     close FILE;

@@ -1,12 +1,13 @@
-
 Apache::OpenIndex - Perl Open Index manager for a Apache Web server
 
+SYNOPSIS
 
   PerlModule Apache::Icon
   PerlModule Apache::OpenIndex
   (PerlModule Apache::Language) optional
   (PerlModule Image::Magick)    optional
 
+DESCRIPTION
 
 OpenIndex provides a file manager for a web sites through a web
 browser. It is a extensive rewrite of the Apache::AutoIndex.pm
@@ -30,12 +31,11 @@ provides a physical directory where files can be managed,
 unzipped, moved, copied, deleted, and renamed. New directories
 can be created with the mkdir command. The MARK directory can
 be mapped to any path location on the Apache server or to any
-site path location.  To activate the MARK directory, the Mark
-directive needs to be set to '1'.
-
-The ROOT (.XOI) directory is actually a fake path of the site's
-root directory.  For example to access "http://www.site.com/bob/"
-the following URL would be required:
+site path location.  To activate the MARK directory access  
+the "mark" directive needs to be set to '1'.  The ROOT (.XOI) 
+directory is actually a fake path of the site's root directory. 
+For example to access "http://www.site.com/bob/" the following 
+URL would be required:
 
 	"http://www.site.com/bob/.XOI/"
 
@@ -268,6 +268,7 @@ provided below.
 These directives are processed by Apache::Icon.pm which
 provides icons to Apache::AutoIndex and Apache::OpenIndex.
 
+
 * FancyIndexing boolean
 
     The FancyIndexing directive tells OpenIndex to present a
@@ -276,11 +277,16 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
     of the following autoindex and AutoIndex directives require
     FancyIndexing.
     
+* HideExt boolean
+
+    The HideExt directive tells OpenIndex to not display the
+    file extention within the index display.
+    
 * HeaderName file file ...
 
-    Inserts a list of files displayed at the top of the HTML
-    page. After Apache 1.3.5 the filename can be a relative URI.
-    If the file name extention is '.html' it will be sent as is.
+    Inserts a list of files displayed at the top of the document
+    After Apache 1.3.5 the filename can be a relative URI.  If 
+    the file name extention is '.html' it will be sent as is.
 
 * IndexIgnore file file
 
@@ -306,8 +312,8 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
 * ReadmeName file file ...
 
     A list of text files that will be displayed to the end of the
-    HTML page.  If the file name extention is '.html' it will be
-    sent as is.
+    document.  If the file mime type is text/html it will be sent
+    as is.
     
 * AddDescription "string" file file...
 
@@ -334,7 +340,9 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
     The file icon to be displayed if no other icon can be found.
     (default icon)
 
+
 AutoIndex DIRECTIVES
+
 
 * IndexOptions Thumbnails
 
@@ -345,43 +353,44 @@ AutoIndex DIRECTIVES
     
     Print file permissions. Defaults to false.
 
-* PerlSetVar IndexHtmlHead value
+* IndexHtmlTag tag attributes
 
-    This should be the url (absolute or relative) of a resource
+    This directive specifies the tag's attributes that will be
+    inserted into the tag.  For example: <TAG attributes>
+
+* IndexHtmlText tag text
+
+    This directive specifies the tag text that will be inserted 
+    within the tag.  For example: <TAG> text </TAG>
+
+* IndexURIHead value
+
+    Value should be the uri (absolute or relative) of a resource
     that would be inserted right after the <BODY> tag and just
     before anything else.
 
-* PerlSetVar IndexHtmlBody 'expression'
+* IndexHtmlFoot value
 
-    This is an expression that should produce complete <BODY>
-    tag when eval'ed. An example:
-
-* PerlSetVar IndexHtmlBody '<BODY BACKGROUND=\"$ENV{BACKGROUND}\">'
-
-* PerlSetVar IndexHtmlTable value
-
-    This is a string that will be inserted inside the table tag
-    of the listing. For example: <TABLE $value>
-
-* PerlSetVar IndexHtmlFrame 'expression'
-
-    This is an expression that should produce complete <FRAMESET>
-    tag when eval'ed. An example:
-
-* PerlSetVar  IndexHtmlFrame '<FRAMESET ROWS=10%,75%,15%',>'
-
-* PerlSetVar IndexHtmlFoot value
-
-    This should be the url (absolute or relative) of a resource
+    Value should be the uri (absolute or relative) of a resource
     that would be inserted right before the ending </BODY> tag
     and after everything else.
 
-* PerlSetVar IndexDebug [0|1]
+* IndexFrameTail value
 
-    If set, the listing displayed will print debugging
-    information. The default is 0.
+    Value is a string that will be inserted after the main frame.
+    The Frame option has to activated in order for this to work.
+    The main frame contains the index table and is always inserted 
+    into the frameset.  A NOFRAME tag is also always included.
+
+* IndexHtmlStyle value
+
+    Value is a string that will be inserted inside the <Style>
+    tag.
+    
+    
 
 OpenIndex DIRECTIVES
+
 
 * OpenIndexOptions Admin n
 
@@ -444,11 +453,6 @@ OpenIndex DIRECTIVES
     want people probing your web site. You may want to prefix
     the name with a '.' in order to hide it from view.
     
-* OpenIndexOptions Name string
-    
-    Set the name displayed for the module in the displays.  The
-    defualt is "OpenIndex".
-
 * OpenIndexOptions MarkDir SubDirectory
     
     Set the mark subdirectory stub name of the where OpenIndex
@@ -549,7 +553,7 @@ OpenIndex DIRECTIVES
     of the http header to zero so that browsers will not cache 
     OpenIndex's output. Default 0.
 
-* OpenIndexOptions Import subroutine limit_arguments
+* OpenIndexOptions Import package subroutine limit_arguments
 
     "This is are real cool directive!"  It allows yot to add
     new commands and routines to OpenIndex.   Look in the 
@@ -557,25 +561,25 @@ OpenIndex DIRECTIVES
     command "MD5.pm".  This command calculates and displays
     the MD5 hash of the files selected, stores them in the
     file entered into the "Destination" form text field, and
-    displays the results.  This directive must provide the
+    displays the results.  This directive can provide the
     full subroutine name including the '::'s.  For example,
     for the MD5 command the following directive is used:
-    OpenIndexOptions import MD5 MD5 before=>MD5before \
-			      after=>MD5after \
-                              back=>MD5back \
-                              min=>1 max=>0
+      OpenIndexOptions \
+	import MD5 MD5 before=>MD5before after=>MD5after \
+        back=>MD5back min=>1 max=>0
 
-    NOTE: that I have use the escape character '\' just to
-    indicate that the the line continues.  Do not use the
-    '/' character in your conf file.
+    NOTE: that the escape character '\' is used to indicate
+    that the the line continues.  Do not use the '/' character
+    in your conf file.
  
     The interesting arguments are as follows:
     The first argument is the package name that contains the
     subroutines.  If it is not fully specified with '::' it
     is preappended with "Apache::OpenIndex::".
 
-    The second argument is the menu command routine added
-    to the menu and called when it is clicked.
+    The second argument is the menu command name of the 
+    routine.  The command is added to the menu  by using 
+    either the 'Menu' or the 'AdmnMenu' directive.
 
     before=>subroutine
         Is the name of the subroutine to run just before the
@@ -617,6 +621,9 @@ OpenIndex DIRECTIVES
         This tells OpenIndex to check and make sure that a value
         is contained in the argument.  The default is to have
         an item selected from the directory index listing.
+    admin=>1
+        Requires that user is the admin user inorder to execute
+        the commands submitted. 
 
 * OpenIndexOptions Always package subroutine arguments
 
@@ -625,6 +632,7 @@ OpenIndex DIRECTIVES
     managed page is processed.  This is where you would hook
     in a quota check routine and so forth.  The arguments
     are only for use by the command specified.
+
 
 THUMBNAILS
 
@@ -661,9 +669,6 @@ Changing configuration options will correctly refresh the cached
 thumbnails. Also, if the original image is modified, the
 thumbnail will be updated accordingly. Still, the browser might
 screw things up if it preserves the cached images.  
-
-The behavior of the Thumbnail generating code can be customized
-with these PerlSetVar variables:
 
 Thumbnail DIRECTIVES
 
@@ -763,6 +768,7 @@ NOTES
 
 This code was made possible by :
 
+
 Philippe M. Chiasson
 
 <gozer@ectoplasm.dyndns.com> Creator of Apache::AutoIndex.
@@ -779,6 +785,7 @@ translated to perl.
 The mod_perl mailing-list 
 
 at <modperl@apache.org> for all your mod_perl related problems.
+
 
 AUTHOR
 

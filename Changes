@@ -32,4 +32,11 @@ Revision history for Perl extension Apache::FileMan.
       all Apache directory and location blocks.
     - Override the glob function in File::NCopy in order to 
       support file names with spaces in them.
+1.02c Tue Oct 17 18:19:00 CDT 2001
+    - Fixed a problem where by, if a directory was being viewed
+      in both the index and file manager mode by two different 
+      browsers, the hidden files could appear in the index mode.
+    - Added IndexHtmlTag and IndexHtmlText directives to support
+      adding attributes and text for most HTML tags.  This
+      includes <STYLE> support for casscading style sheets.
 ~

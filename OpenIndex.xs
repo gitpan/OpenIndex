@@ -29,6 +29,18 @@ static void stash_mod_pointer (char *class, void *ptr)
 	     class, strlen(class), sv, FALSE);
 }
 
+static mod_perl_cmd_info cmd_info_IndexHtmlTag = { 
+"Apache::OpenIndex::IndexHtmlTag", "", 
+};
+static mod_perl_cmd_info cmd_info_IndexHtmlText = { 
+"Apache::OpenIndex::IndexHtmlText", "", 
+};
+static mod_perl_cmd_info cmd_info_IndexURIHead = { 
+"Apache::OpenIndex::set_config", "headuri", 
+};
+static mod_perl_cmd_info cmd_info_IndexURIFoot = { 
+"Apache::OpenIndex::set_config", "footuri", 
+};
 static mod_perl_cmd_info cmd_info_IndexIgnore = { 
 "Apache::OpenIndex::push_config", "ignore", 
 };
@@ -60,13 +72,29 @@ static mod_perl_cmd_info cmd_info_OpenIndexOptions = {
 
 static command_rec mod_cmds[] = {
     
+    { "IndexHtmlTag", perl_cmd_perl_RAW_ARGS,
+      (void*)&cmd_info_IndexHtmlTag,
+      OR_INDEXES, RAW_ARGS, "html tag attribute string" },
+
+    { "IndexHtmlText", perl_cmd_perl_RAW_ARGS,
+      (void*)&cmd_info_IndexHtmlText,
+      OR_INDEXES, RAW_ARGS, "html string" },
+
+    { "IndexURIHead", perl_cmd_perl_TAKE1,
+      (void*)&cmd_info_IndexURIHead,
+      OR_INDEXES, TAKE1, "header URI string" },
+
+    { "IndexURIFoot", perl_cmd_perl_TAKE1,
+      (void*)&cmd_info_IndexURIFoot,
+      OR_INDEXES, TAKE1, "footer URI string" },
+
     { "IndexIgnore", perl_cmd_perl_ITERATE,
       (void*)&cmd_info_IndexIgnore,
       OR_INDEXES, ITERATE, "a list of file names" },
 
     { "DirectoryIndex", perl_cmd_perl_ITERATE,
       (void*)&cmd_info_DirectoryIndex,
-      OR_INDEXES, ITERATE, "one or more file extensions" },
+      OR_INDEXES, ITERATE, "a list of file extensions" },
 
     { "HeaderName", perl_cmd_perl_ITERATE,
       (void*)&cmd_info_HeaderName,
