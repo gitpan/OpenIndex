@@ -1,0 +1,21 @@
+Revision history for Perl extension Apache::FileMan.
+
+0.01  Sat Sep 02 16:19:00 2000
+	- it's alive!
+0.06a Sun Feb 18 20:16:55 2001
+    - Fixed Apache::Language.
+0.07a
+    - Added frame support.
+0.07c
+    - Reorganized HOLD directory to be located anywhere on the server.
+    - Added the import directive for adding arbitrary commands.
+    - Supplied MD5 as an example of an import commond.
+0.07d
+    - Added "SelectAll" internal command.
+0.07g Mon Sep  3 17:55:45 CDT 2001 
+    - Added Total size.
+    - Fixed IndexOrderDefault for Name file extension sort.
+0.99 Thu Sep  6 16:58:20 CDT 2001
+    - Changed the name of the package to Apache::OpenIndex
+    - Added always directive and routine hook.
+~
