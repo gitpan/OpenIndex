@@ -1,8 +1,8 @@
-#$Id: OpenIndex.pm,v 1.00 2001/09/14 17:56:42 perler@xorgate.com Exp $
+#$Id: OpenIndex.pm,v 1.01 2001/09/28 17:56:42 perler@xorgate.com Exp $
 package Apache::OpenIndex;
 use strict;
 
-$Apache::OpenIndex::VERSION = '1.00';
+$Apache::OpenIndex::VERSION = '1.01';
 
 use Apache::Constants qw(:common OPT_INDEXES DECLINE_CMD REDIRECT DIR_MAGIC_TYPE);
 use DynaLoader ();
@@ -86,12 +86,6 @@ $nThumb=0;
 
 # global arguments
 use vars qw($debug $dodump $errmsg $chgid $users $iconfig %commands);
-$debug;
-$dodump;
-$errmsg;
-$chgid;		# used within chgid() required for File::NCopy
-$users;		# global users revoke cache
-$iconfig;
 %commands = (
     Menu => {
 	back=>\&procform,
@@ -307,7 +301,7 @@ sub procform {
     my $oldmask=umask $cfg->{umask} if $args->{gid} && @{$args->{gid}} && $cfg->{umask};
 # process any before command
     if($commands{$cmd}{before}) {
-	unless($commands{$cmd}{before}($r,$args,$cfg,$docroot,$items,$formdst)) {
+	unless($commands{$cmd}{before}->($r,$args,$cfg,$docroot,$items,$formdst)) {
 	    $r->log->error(__PACKAGE__." $cmd before: $errmsg");
 	    return ERROR;
 	}
@@ -330,7 +324,7 @@ sub procform {
 	    umask($oldmask) if $args->{gid} && @{$args->{gid}} && $cfg->{umask};
 	    $retval=ERROR;
 	} else {
-	    $retval=$commands{$cmd}{cmd}($r,$args,$cfg,$docroot,$formsrc,$formdst);
+	    $retval=$commands{$cmd}{cmd}->($r,$args,$cfg,$docroot,$formsrc,$formdst);
 	    unless($retval) {
 		$r->log->warn(__PACKAGE__." $cmd ERROR: $args->{user}: $docroot: src=$formsrc dst=$formdst: $errmsg");
 		$retval=ERROR;
@@ -341,7 +335,7 @@ sub procform {
     } until $icnt<1 || $retval;
 # process any after command
     if($commands{$cmd}{after}) {
-	$retval=$commands{$cmd}{after}($r,$args,$cfg,$docroot,$formdst);
+	$retval=$commands{$cmd}{after}->($r,$args,$cfg,$docroot,$formdst);
 	unless($retval) {
 	    $r->log->error(__PACKAGE__." $cmd after: $errmsg");
 	    $retval=ERROR;
@@ -766,7 +760,15 @@ sub Help {
 }
 
 sub Debug {
-    my ($r,$args) = @_;
+    my ($r,$args,$cfg) = @_;
+    my $lang = new Apache::Language($r) if $cfg->{language};
+    my $msg='';
+    my $cmdname=$lang->{Debug} || 'Debug';
+    unless(isagid($args->{gid},$cfg->{admin})) {
+	$msg=$lang->{AdminAccess} || 'Admin access denied';
+	errmsg("${cmdname}: $msg");
+	return 0;
+    }
     $dodump = !$dodump if $debug;
     print STDERR "Debug=$dodump\n" if $debug;
     $r->log->notice(__PACKAGE__." $args->{user}: Debug: $dodump");
@@ -775,11 +777,16 @@ sub Debug {
 
 sub SetGID {	# Set the item (file or dir) GID 
     my ($r,$args,$cfg,$root,$src,$igid) = @_;
-    $src="$root$src";
-    my $name;
     my $lang = new Apache::Language($r) if $cfg->{language};
     my $msg='';
     my $cmdname=$lang->{SetGID} || 'SetGID';
+    unless(isagid($args->{gid},$cfg->{admin})) {
+	$msg=$lang->{AdminAccess} || 'Admin access denied';
+	errmsg("${cmdname}: $msg");
+	return 0;
+    }
+    $src="$root$src";
+    my $name;
     chomp $cmdname;
     if(isagid($args->{gid},$cfg->{admin})) {
 	if($igid=~m:[^0-9]:o) {		# if not a number look-up the group
@@ -812,12 +819,17 @@ sub SetGID {	# Set the item (file or dir) GID
 
 sub Revoke {
     my ($r,$args,$cfg) = @_;
-    my $uri = $r->uri;
-    my $textlen=$cfg->{textlen} || DEFAULT_TEXT_LEN;
-    my $halflen=($textlen+($textlen%2))/2;
     my $lang = new Apache::Language($r) if $cfg->{language};
     my $msg='';
     my $cmdname=$lang->{Revoke} || 'Revoke';
+    unless(isagid($args->{gid},$cfg->{admin})) {
+	$msg=$lang->{AdminAccess} || 'Admin access denied';
+	errmsg("${cmdname}: $msg");
+	return 0;
+    }
+    my $uri = $r->uri;
+    my $textlen=$cfg->{textlen} || DEFAULT_TEXT_LEN;
+    my $halflen=($textlen+($textlen%2))/2;
     chomp $cmdname;
     if(!$cfg->{revoke} || !isagid($args->{gid},$cfg->{admin})) {
 	$r->log->error(__PACKAGE__." Revoke: internal error:");
@@ -1414,7 +1426,15 @@ sub editini {
 sub Revokem {
     my ($r,$args,$cfg,$docroot) = @_;
     return 0 if $args->{return};
-    my  $revgid=$args->{id} if $args->{enagid} || $args->{disgid};
+    my $lang = new Apache::Language($r) if $cfg->{language};
+    my $msg='';
+    my $cmdname=$lang->{Revoke} || 'Revoke';
+    unless(isagid($args->{gid},$cfg->{admin})) {
+	$msg=$lang->{AdminAccess} || 'Admin access denied';
+	errmsg("${cmdname}: $msg");
+	return 0;
+    }
+    my $revgid=$args->{id} if $args->{enagid} || $args->{disgid};
     my $revuser=$args->{id} if $args->{enauid} || $args->{disuid};
     my $file="$docroot$args->{root}$cfg->{fakedir}".REVOKE_DIR;
        $file.=REVOKE_FILE;
@@ -1836,7 +1856,7 @@ sub handler {
 		return FORBIDDEN;
 	    }
 	    if($cfg->{always}) {
-		$retval=$cfg->{always}($r,\%args,$cfg,$uri);
+		$retval=$cfg->{always}->($r,\%args,$cfg,$uri);
 		if($retval>99) {
 		    $nRedir++;
 		    print STDERR "ALWAYS $retval\n===== ", __PACKAGE__, " DEBUG STOP  =====\n" if $debug;
@@ -1848,7 +1868,7 @@ sub handler {
 		    $args{dir}="$args{root}$cfg->{fakedir}/";
 		    $args{dir}.="$cfg->{markdir}/" if $mode & URI_MARK;
 		}
-		$retval=$commands{$args{proc}}{back}($r,\%args,$cfg,$docroot);
+		$retval=$commands{$args{proc}}{back}->($r,\%args,$cfg,$docroot);
 		if($retval>99) {
 		    $nRedir++;
 		    print STDERR "proc($args{proc}) $retval\n===== ", __PACKAGE__, " DEBUG STOP  =====\n" if $debug;
@@ -1994,8 +2014,6 @@ sub OpenIndexOptions($$$;*) {
 	    if($nodef) {
 		delete $commands{$r}; # This is bad, so throw it away!
 		warn "OpenIndexOptions: IMPORT: routine $nodef not defined! ";
-	    } else {
-		unshift @{$cfg->{menu}},$r;
 	    }
 	} else {
 	    warn "OpenIndexOptions: IMPORT: no command! ";
@@ -3170,24 +3188,25 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
     command "MD5.pm".  This command calculates and displays
     the MD5 hash of the files selected, stores them in the
     file entered into the "Destination" form text field, and
-    displays the results.  This directive must provide the
+    displays the results.  This directive can provide the
     full subroutine name including the '::'s.  For example,
     for the MD5 command the following directive is used:
       OpenIndexOptions \
 	import MD5 MD5 before=>MD5before after=>MD5after \
         back=>MD5back min=>1 max=>0
 
-    NOTE: that I have use the escape character '\' just to
-    indicate that the the line continues.  Do not use the
-    '/' character in your conf file.
+    NOTE: that the escape character '\' is used to indicate
+    that the the line continues.  Do not use the '/' character
+    in your conf file.
  
     The interesting arguments are as follows:
     The first argument is the package name that contains the
     subroutines.  If it is not fully specified with '::' it
     is preappended with "Apache::OpenIndex::".
 
-    The second argument is the menu command routine added
-    to the menu and called when it is clicked.
+    The second argument is the menu command name of the 
+    routine.  The command is added to the menu  by using 
+    either the 'Menu' or the 'AdmnMenu' directive.
 
     before=>subroutine
         Is the name of the subroutine to run just before the

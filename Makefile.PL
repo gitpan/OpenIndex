@@ -68,11 +68,12 @@ WriteMakefile(
 	'VERSION_FROM'	=> "OpenIndex.pm",        
 	'INC'		=> Apache::src->new->inc,
 	'PREREQ_PM'	=> { 
-				'Apache::Icon'  => '0.02',   
+				'Apache::Icon'     => '0.02',   
 				'HTML::HeadParser' => 0,
-			     	'Apache'        => 0,
-				'Apache::Status' => 0,
+			     	'Apache'           => 0,
+				'Apache::Status'   => 0,
 				'Apache::Language' => 0,
-			   	'Storable'	=> 0,
+			   	'Storable'	   => 0,
+				'File::NCopy'      => 0,
 				}, 
 );

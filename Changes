@@ -18,4 +18,12 @@ Revision history for Perl extension Apache::FileMan.
 0.99 Thu Sep  6 16:58:20 CDT 2001
     - Changed the name of the package to Apache::OpenIndex
     - Added always directive and routine hook.
+1.00 Fri Sep 14 16:00 CDT 2001
+    - Uploaded the source to CPAN
+1.01 Fri Sep 28 18:27:00 CDT 2001
+    - Added Tatsuhiko Miyagawa patch to allow it to compile
+      on Perl 5.005_03
+    - Removed adding an import command to the Menu, because
+      it might turn out that it should be added to the admnmenu
+    - Added admin check for admin commands to prevent spoofs.
 ~

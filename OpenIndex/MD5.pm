@@ -5,8 +5,9 @@ use Digest::MD5;
 use Apache::Util qw(escape_uri);
 my $ofh;
 
-# The following directive is what I used in httpd.conf file for the MD5 menu command.
-# OpenIndexOptions Import MD5 MD5 before=>MD5before after=>MD5after min=>1 max=>0 back=>MD5back
+# The following two directives can be used in httpd.conf file for adding the MD5 menu command.
+#   OpenIndexOptions Import MD5 MD5 before=>MD5before after=>MD5after min=>1 max=>0 back=>MD5back
+#   OpenIndexOptions Menu +MD5
 #
 # Copyright (c) 2001 George Sanderson All rights reserved. This
 # program is free software; you can redistribute it and/or modify

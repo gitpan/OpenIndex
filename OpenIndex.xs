@@ -103,7 +103,7 @@ module MODULE_VAR_EXPORT XS_Apache__OpenIndex = {
     STANDARD_MODULE_STUFF,
     NULL,               /* module initializer */
     create_dir_config_sv,  /* per-directory config creator */
-    perl_perl_merge_dir_config,   /* dir config merger */
+    NULL,   /* dir config merger */
     create_srv_config_sv,       /* server config creator */
     NULL,        /* server config merger */
     mod_cmds,               /* command table */
