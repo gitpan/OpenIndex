@@ -1,5 +1,3 @@
-NAME
-
 Apache::OpenIndex - Perl Open Index manager for a Apache Web server
 
 SYNOPSIS
@@ -86,7 +84,7 @@ in your httpd.conf file or with:
    use Apache::Icon();
    use Apache::OpenIndex();
  
-in your starup.pl file.
+in your startup.pl file.
 
 Configuration Guidelines
 
@@ -124,7 +122,7 @@ The OpenIndex file manager would be activated for "/friends/bob".
 Even though the .XOI directory is a fake reference for the real
 directory tree, it must exist in order to activate the file
 manager. If a ".XOI/.MARK" directory is also present, and the
-"mark" directive is set to '1', access to any locatoin on the
+"mark" directive is set to '1', access to any location on the
 Apache server can be managed.
 
 You will probably want to provide authentication and
@@ -168,7 +166,7 @@ you need to have a good understanding of your operating system's
 OpenIndex can allow groups of users to share the same web server
 file space (tree), such that individuals can be prevented from
 changing each others files and directories. An "admin" group can
-also be specified, which allowes certain users to be able to
+also be specified, which allows certain users to be able to
 modify all the files and directories within the tree, as well
 as, assign GID access to the files and directories.
  
@@ -198,10 +196,10 @@ valid (for Apache and it's OS), all files and directories created by
 that user will have their GID set to 1000.
 
 HINT:  If you set the "OpenIndexOptions Debug 1" directive, the
-environment variables will be listed along with other debuging
-information.  You can then spot your GID environement variable
+environment variables will be listed along with other debugging
+information.  You can then spot your GID environment variable
 set by your authorization module in order to verify it's
-existance and OpenIndex operation. 
+existence and OpenIndex operation. 
 
 An admin directive can also be specified which enables a user
 with the specified admin GID to access and control all files and
@@ -217,7 +215,7 @@ The GIDEnv directive tells OpenIndex which environment variable
 contains the GID (REMOTE_GROUP in this example). [This variable
 would have been set by an authorization module.] If the GID for
 the user happens to be 1000, then that user will have "admin"
-privleges and it's commands (SetGID).
+privileges and it's commands (SetGID).
 
 The operating system (OS) rules still apply to all of the GID
 operations. For example (OS=UNIX), if Apache's program ID (PID)
@@ -269,7 +267,6 @@ provided below.
 
 These directives are processed by Apache::Icon.pm which
 provides icons to Apache::AutoIndex and Apache::OpenIndex.
-
 
 * FancyIndexing boolean
 
@@ -340,7 +337,6 @@ provides icons to Apache::AutoIndex and Apache::OpenIndex.
 
 AutoIndex DIRECTIVES
 
-
 * IndexOptions Thumbnails
 
     The listing will include thumbnails for pictures. Defaults to
@@ -355,7 +351,7 @@ AutoIndex DIRECTIVES
     When a header or footer file is included with the 
        HeaderName file file ...
        ReadmeName file file ...
-    directives, the <HTML> <HEAD> and <BODY> tags are stripted.
+    directives, the <HTML> <HEAD> and <BODY> tags are striped.
     
 * IndexOptions FoldersFirst
 
@@ -376,7 +372,7 @@ AutoIndex DIRECTIVES
     attributes.  If the first character of attributes is a '-'
     or not a '+', the current tag's attributes will be set to
     the following attributes string.  Note that an initial '+'
-    or '-' charater is always striped.
+    or '-' character is always striped.
 
     HINT: If you need to have the first line start with a '+' or a
     '-' character, use "-+ . . ." or "-- . . .".
@@ -390,7 +386,7 @@ AutoIndex DIRECTIVES
     the following text to the current tag's text.  If the first
     character of text is a '-' or not a '+', the current tag's
     text will be set to the following text.  Note that an initial
-    '+' or '-' charater is always striped.
+    '+' or '-' character is always striped.
 
     HINT: If you need to have the first line start with a '+' or a
     '-' character, use "-+ . . ." or "-- . . .".
@@ -398,6 +394,16 @@ AutoIndex DIRECTIVES
     The frameset tag is special in that you will need to place
     <mainframe> in the position where the index (main) frame is to
     be placed  In this way any arbitrary frameset can be supported.
+
+    HTML text can also be inserted just before each of the form text
+    and submit buttons by appending 'insert' before it's name.  For
+    example to insert "Hello World" just before 'Browse' text field
+    specify:
+
+        IndexHtmlText InsertBrowse Hello World
+
+    HINT: If the language option is enabled, the text will be looked
+    up in order to support multiple languages.
 
 * IndexURIHead value
 
@@ -424,9 +430,7 @@ AutoIndex DIRECTIVES
     tag.
     
     
-
 OpenIndex DIRECTIVES
-
 
 * OpenIndexOptions Admin n
 
@@ -505,6 +509,37 @@ OpenIndex DIRECTIVES
     on the web server.  The browser client will not be able to 
     go below this directory.
     
+* OpenIndexOptions UserDir pattern
+
+    If you use the userdir_module and you want OpenIndex to
+    manage the files accessed there, then you will need to
+    duplicate it's UserDir translation directive using this 
+    directive.  For example:
+
+    OpenIndexOptions UserDir /home/*/htdocs
+
+    will translate /~bob to /home/bob/htdocs
+
+* OpenIndexOptions UserSite rootpath
+
+    This directive restricts a user to a particular site
+    path.  This is useful because it allow one group id
+    to be used for a group of users by restricting which
+    path particular each use can access.  For example, if
+    you have two user sites which use the following URLs:
+
+        http://www.thesite.com/friends/ed
+        http://www.thesite.com/friends/steve
+
+    You could create a group, named 'friends' for both
+    users and restrict each user to their own site, by 
+    specifying:
+
+        OpenIndexOptions UserSite /friends
+
+    Then when 'ed' tries to access any URL outside
+    of '/friends/ed', OpenIndex will deny the request.
+
 * OpenIndexOptions TextLen n
     
     Sets the text entry field of the command form to length n.
@@ -558,7 +593,7 @@ OpenIndex DIRECTIVES
         
     An environment variable can be specified which holds the
     user name of the request.  If 'Basic' authorization is being
-    used, the user name will be recovered from Apachei, regardless
+    used, the user name will be recovered from Apache, regardless
     of what ever is specified for 'UserEnv name'.
 
 * OpenIndexOptions Revoke [1|0]
@@ -591,7 +626,7 @@ OpenIndex DIRECTIVES
 
 * OpenIndexOptions Import package subroutine limit_arguments
 
-    "This is are real cool directive!"  It allows yot to add
+    "This is are real cool directive!"  It allows you to add
     new commands and routines to OpenIndex.   Look in the 
     OpenIndex/OpenIndex directory and you will find an external
     command "MD5.pm".  This command calculates and displays
@@ -620,7 +655,7 @@ OpenIndex DIRECTIVES
     before=>subroutine
         Is the name of the subroutine to run just before the
         menu command subroutine (Apache::OpenIndex::MD5before in 
-        the example).  This command allows any initilalation
+        the example).  This command allows any initialization
         work to be done before the main command.  The main
         command (Apache::OpenIndex::MD5 in the example) is called
         once for each file/directory item selected from the
@@ -642,13 +677,13 @@ OpenIndex DIRECTIVES
         by the OpenIndex user.  A value of 0, means there is no
         maximum number.
     src=>arg
-        This tells OpenIndex which argument contines the source 
+        This tells OpenIndex which argument contains the source 
         string for the command.  Normally this is the list of
         items from the directory index listing.  However, you
         can use any input you like by perhaps setting an @args
         string in the before=>routine.
     dst=>arg
-        This tells OpenIndex which argument contines the destination
+        This tells OpenIndex which argument contains the destination
         string for the command.  Normally this is the text in
         "Destination" text form field.  However, you can use 
         any input you like by perhaps setting an @args string 
@@ -658,17 +693,16 @@ OpenIndex DIRECTIVES
         is contained in the argument.  The default is to have
         an item selected from the directory index listing.
     admin=>1
-        Requires that user is the admin user inorder to execute
+        Requires that user is the admin user in order to execute
         the commands submitted. 
 
 * OpenIndexOptions Always package subroutine arguments
 
-    "This is another real cool directive!"  It allows yot to 
+    "This is another real cool directive!"  It allows you to 
     specify an external command to run before each OpenIndex
     managed page is processed.  This is where you would hook
     in a quota check routine and so forth.  The arguments
     are only for use by the command specified.
-
 
 THUMBNAILS
 
@@ -708,7 +742,6 @@ screw things up if it preserves the cached images.
 
 Thumbnail DIRECTIVES
 
-
 * IndexCacheDir dir
 
 This is the name of the directory where the generated thumbnails
@@ -730,7 +763,7 @@ Defaults to 500,000
 
 * ThumbMinFilesize bytes
 
-This value fixes the minumum size of an image at which thumbnail
+This value fixes the minimum size of an image at which thumbnail
 processing isn't actually done. Since trying to process already
 very small images could be an overkill, the image is simply
 resized with the size attributes of the IMG tag. Defaults to
@@ -777,7 +810,6 @@ image ratio will be preserved only if there is no fixed scaling
 factor for the other axis of the image. This has no effect if a
 scaling factor is defined.
 
-
 TODO
 
 The thumbnail support needs to be tested. It was provide with
@@ -792,8 +824,8 @@ cache or the directories will fill up.
 
 SEE ALSO
 
-perl(1), Apache(3), Apache::Icon(3), Image::Magick(3) .
-Apache::AutoIndex(3)
+perl(1), L<Apache>(3), L<Apache::Icon>(3), L<Image::Magick>(3) .
+L<Apache::AutoIndex>(3)
     
 SUPPORT
 
@@ -803,7 +835,6 @@ mailing list <modperl@apache.org> or to me at <perler@xorgate.com>
 NOTES
 
 This code was made possible by :
-
 
 Philippe M. Chiasson
 
@@ -821,7 +852,6 @@ translated to perl.
 The mod_perl mailing-list 
 
 at <modperl@apache.org> for all your mod_perl related problems.
-
 
 AUTHOR
 

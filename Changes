@@ -45,4 +45,12 @@ Revision history for Perl extension Apache::FileMan.
       '+' character.
     - Modified (empty) tags to comform to XHTML requirements.
       For example: <p /> 
-~
+1.05  Mon Sep 02 11:04:00 CST 2002
+    - Added three checks for $cfg-{ignore} existance.
+    - Added OpenIndexOptions UserDir directive and fixed ~user
+      processing for userdir_module.
+    - Added OpenIndexOptions UserSite directive.  This option
+      allows a group of users to use the same GID which in
+      turn prevents each user from accessing other user sites.
+    - Added more IndexHtmlText directives to insert HTML text
+      just before each of the form text and submit objects.
