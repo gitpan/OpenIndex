@@ -23,7 +23,13 @@ Revision history for Perl extension Apache::FileMan.
 1.01 Fri Sep 28 18:27:00 CDT 2001
     - Added Tatsuhiko Miyagawa patch to allow it to compile
       on Perl 5.005_03
-    - Removed adding an import command to the Menu, because
-      it might turn out that it should be added to the admnmenu
+    - Removed adding the import command to the Menu, because
+      it might turn out that it should be added to the admnmenu.
     - Added admin check for admin commands to prevent spoofs.
+1.02 Tue Oct 09 15:18:00 CDT 2001
+    - Filtered user required text to not include hidden files.
+    - Fix a problem with the menu configuration merge affecting
+      all Apache directory and location blocks.
+    - Override the glob function in File::NCopy in order to 
+      support file names with spaces in them.
 ~

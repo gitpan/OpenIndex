@@ -206,6 +206,10 @@ en:DestCheck
 
 Check destination path
 
+en:forbid
+
+Forbidden: 
+
 en:DirConflict
 
 Source directory but a destination file

@@ -1189,15 +1189,6 @@ sub Rename {
     1;
 }
 
-###################################################################
-# The following override is requried because File::NCopy uses glob
-# which can not deal with spaces in the file names.
-###################################################################
-package File::NCopy;
-use subs qw(glob);
-sub glob {@_};
-package Apache::OpenIndex;
-###################################################################
 sub Copy {
  my ($r,$args,$cfg,$root,$src,$dst) = @_;
  my $target=$src;

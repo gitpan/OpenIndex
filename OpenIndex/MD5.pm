@@ -90,7 +90,7 @@ sub MD5back {
 	return 0;
     }
     return SKIP_INDEX unless httphead($r,"$cmdname results");
-    fm_header($r,$cfg) unless $cfg->{frames}; 
+    header($r,$cfg) unless $cfg->{frames}; 
     print qq~<H3>$cmdname results</H3>\n~,
 	qq~<TABLE COL="2" BORDER>\n~,
 	qq~<TR><TH> Filename </TH><TH> MD5 Hash </TH></TR>\n~;
